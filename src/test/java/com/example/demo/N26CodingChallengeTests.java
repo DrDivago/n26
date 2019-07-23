@@ -22,6 +22,9 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 @RunWith(SpringRunner.class)
@@ -33,17 +36,113 @@ public class N26CodingChallengeTests {
     private MockMvc mvc;
 
 
+    private String createJson(String amount, LocalDateTime timeTransaction) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        String timestamp = formatter.format(timeTransaction);
+
+        return "{\"amount\":\""+amount+"\",\"timestamp\":\""+timestamp+"\"}";
+    }
+
     @Test
-    public void postTransactionInvalidInput() throws Exception {
+    public void post_transaction_valid() throws Exception {
         String uri = "/transactions";
 
-        String inputJson = "{\"amount\":\"10.3\",\"timestamp\":\"1563703754\"}";
+        LocalDateTime now = LocalDateTime.now().minusSeconds(1);
+        String inputJson = createJson("10.334", now);
+
+        System.out.println(inputJson);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
 
         int status = mvcResult.getResponse().getStatus();
         Assert.assertEquals(HttpStatus.CREATED.value(), status);
+    }
+
+    @Test
+    public void post_transaction_older_then_sixty_seconds() throws Exception {
+        String uri = "/transactions";
+
+        LocalDateTime now = LocalDateTime.now().minusSeconds(120);
+        String inputJson = createJson("10.334", now);
+
+        System.out.println(inputJson);
+
+        MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
+
+        int status = mvcResult.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.NO_CONTENT.value(), status);
+    }
+
+    @Test
+    public void post_transaction_invalid_json() throws Exception {
+        String uri = "/transactions";
+
+        String amount = "10.3";
+        String timestamp = "fkd";
+
+        String inputJson = "{\"amoukjnt\":\""+amount+"\",\"timjjestamp\":\""+timestamp+"\"}";
+
+        System.out.println(inputJson);
+
+        MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
+
+        int status = mvcResult.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.BAD_REQUEST.value(), status);
+    }
+
+    @Test
+    public void post_transaction_not_parsable_amount() throws Exception {
+        String uri = "/transactions";
+
+        LocalDateTime now = LocalDateTime.now().minusSeconds(120);
+        String inputJson = createJson("10.334y", now);
+
+
+        System.out.println(inputJson);
+
+        MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
+
+        int status = mvcResult.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), status);
+    }
+
+    @Test
+    public void post_transaction_not_parsable_timestamp() throws Exception {
+        String uri = "/transactions";
+
+        LocalDateTime less = LocalDateTime.now().minusSeconds(120);
+        String timestamp = less.toString() + "kljj";
+        String inputJson=  "{\"amount\":\"10.3\",\"timestamp\":\""+timestamp+"\"}";
+
+
+        System.out.println(inputJson);
+
+        MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
+
+        int status = mvcResult.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), status);
+    }
+
+    @Test
+    public void post_transaction_in_future() throws Exception {
+        String uri = "/transactions";
+
+        LocalDateTime transactionInFuture = LocalDateTime.now().plusMinutes(1);
+        String inputJson=  createJson("11.04", transactionInFuture);
+
+
+        System.out.println(inputJson);
+
+        MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
+                .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
+
+        int status = mvcResult.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), status);
     }
 
     @Test
@@ -133,5 +232,17 @@ public class N26CodingChallengeTests {
       //  Assert.assertEquals(statistics.getMin(), 10.3, 0.001);
        // Assert.assertEquals(statistics.getMax(), 10.3, 0.001);
         Assert.assertEquals(statistics.getCount(), 1);
+    }
+
+    @Test
+    public void delete_transactions() throws Exception {
+
+        String uriTransaction = "/transactions";
+
+
+        MvcResult mvcResultTransaction = mvc.perform(MockMvcRequestBuilders.delete(uriTransaction)).andReturn();
+
+        int statusTransaction = mvcResultTransaction.getResponse().getStatus();
+        Assert.assertEquals(HttpStatus.NO_CONTENT.value(), statusTransaction);
     }
 }

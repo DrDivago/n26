@@ -5,11 +5,14 @@ import com.example.demo.model.Transaction;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 
 @Component
 public class StatisticTotal implements StatisticsTotalInterface {
 
     private StatisticsBucket[] statisticsBuckets;
+    private LinkedHashMap<Long, StatisticsBucket> cache = new LinkedHashMap<>(60);
+    private static final int MAX_ENTRY = 60;
 
     public StatisticTotal() {
         statisticsBuckets = new StatisticsBucket[60];
@@ -52,5 +55,17 @@ public class StatisticTotal implements StatisticsTotalInterface {
 
     public int calculateBucket(long timestamp) {
         return 0;
+    }
+
+    public static void main(String[] args) {
+        LinkedHashMap<Long, String> l = new LinkedHashMap(10, 0.75f, false);
+        l.put(0L, "a");
+        l.put(59L, "b");
+        l.put(30L, "c");
+
+        System.out.println(l.get(59L));
+
+        System.out.println(l);
+
     }
 }
