@@ -2,8 +2,8 @@ package com.example.demo;
 
 import com.example.demo.model.Statistics;
 import com.example.demo.model.Transaction;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.deploy.net.HttpResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,19 +13,15 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -35,6 +31,15 @@ public class N26CodingChallengeTests {
     @Autowired
     private MockMvc mvc;
 
+    private ObjectMapper objectMapper;
+
+
+    @Before
+    public void setUp() throws Exception{
+        Jackson2ObjectMapperBuilder.json().featuresToDisable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
+        objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules();
+    }
 
     private String createJson(String amount, LocalDateTime timeTransaction) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -149,10 +154,11 @@ public class N26CodingChallengeTests {
     public void postTransaction() throws Exception {
         String uri = "/transactions";
         Transaction transaction = new Transaction();
-        transaction.setAmount(new BigDecimal("10.3"));
-        //transaction.setTimestamp(new Date());
+        LocalDateTime validDate = LocalDateTime.now().minusSeconds(30);
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        transaction.setAmount(new BigDecimal("10.3"));
+        transaction.setTimestamp(validDate);
+
         String json = objectMapper.writeValueAsString(transaction);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
@@ -165,11 +171,13 @@ public class N26CodingChallengeTests {
     @Test
     public void postTransactionPastDate() throws Exception {
         String uri = "/transactions";
+
+        LocalDateTime localDateTime = LocalDateTime.now().minusMinutes(2);
+
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal("10.3"));
-        //transaction.setTimestamp(new Date());
+        transaction.setTimestamp(localDateTime);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(transaction);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
@@ -189,7 +197,6 @@ public class N26CodingChallengeTests {
         int status = mvcResult.getResponse().getStatus();
         Assert.assertEquals(HttpStatus.OK.value(), status);
 
-        ObjectMapper objectMapper = new ObjectMapper();
         Statistics  statistics = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), Statistics.class);
 
         //Assert.assertEquals(statistics.getSum(), 0, 0.001);
@@ -204,11 +211,13 @@ public class N26CodingChallengeTests {
 
 
         String uriTransaction = "/transactions";
+
+        LocalDateTime localDateTime = LocalDateTime.now().minusSeconds(30);
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal(10.3));
-        //transaction.setTimestamp(new Date());
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        transaction.setTimestamp(localDateTime);
+
         String json = objectMapper.writeValueAsString(transaction);
 
         MvcResult mvcResultTransaction = mvc.perform(MockMvcRequestBuilders.post(uriTransaction)
@@ -227,10 +236,10 @@ public class N26CodingChallengeTests {
 
         Statistics  statistics = objectMapper.readValue(mvcResultStatistics.getResponse().getContentAsString(), Statistics.class);
 
-        //Assert.assertEquals(statistics.getSum(), 10.3, 0.001);
-       // Assert.assertEquals(statistics.getAvg(), 10.3, 0.001);
-      //  Assert.assertEquals(statistics.getMin(), 10.3, 0.001);
-       // Assert.assertEquals(statistics.getMax(), 10.3, 0.001);
+        Assert.assertEquals(statistics.getSum().doubleValue(), 10.3, 0.001);
+        Assert.assertEquals(statistics.getAvg().doubleValue(), 10.3, 0.001);
+        Assert.assertEquals(statistics.getMin().doubleValue(), 10.3, 0.001);
+        Assert.assertEquals(statistics.getMax().doubleValue(), 10.3, 0.001);
         Assert.assertEquals(statistics.getCount(), 1);
     }
 

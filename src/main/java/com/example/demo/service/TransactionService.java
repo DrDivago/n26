@@ -1,8 +1,9 @@
 package com.example.demo.service;
 
-import com.example.demo.TrasanctionNotValidException;
-import com.example.demo.TransactionInFutureException;
+import com.example.demo.exception.TrasanctionNotValidException;
+import com.example.demo.exception.TransactionInFutureException;
 import com.example.demo.dao.StatisticTotal;
+import com.example.demo.dao.ValidityRange;
 import com.example.demo.model.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,13 +11,13 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 
 
 @Service
 public class TransactionService {
 
     private StatisticTotal statisticTotal;
+    private ValidityRange validityRange = new ValidityRange();
 
     @Autowired
     public TransactionService(final StatisticTotal statisticTotal) {
@@ -32,7 +33,8 @@ public class TransactionService {
             throw new TransactionInFutureException();
         }
 
-        statisticTotal.addTransaction(transaction);
+        validityRange.updateRange(now.toEpochSecond(ZoneOffset.UTC));
+        statisticTotal.addTransaction(transaction, validityRange);
 
     }
 
@@ -54,5 +56,6 @@ public class TransactionService {
     }
 
     public void deleteTransactions() {
+        statisticTotal.delete();
     }
 }

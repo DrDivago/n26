@@ -7,5 +7,7 @@ public interface StatisticsTotalInterface {
 
     Statistics getStatistics();
 
-    void addTransaction(Transaction transaction);
+    void addTransaction(Transaction transaction, ValidityRange validityRange);
+
+    void delete();
 }
