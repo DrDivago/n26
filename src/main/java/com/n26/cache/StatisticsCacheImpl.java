@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  * Cache implemented with a array of SIZE bucket
  * when a new Transaction is added an index is calculated and the transaction is added on the bucket
  * add, update, invalidate, deleteAll acquire a write lock
- * getTimestamp and mapReduce get a readlock
+ * getTimestamp and mapReduce get a read lock
  */
 @Component
 public class StatisticsCacheImpl extends BaseStatisticsCache implements StatisticsCache<Transaction, Statistics> {
