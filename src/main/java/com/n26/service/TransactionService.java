@@ -1,16 +1,15 @@
-package com.example.demo.service;
+package com.n26.service;
 
-import com.example.demo.cache.StatisticsCache;
-import com.example.demo.exception.TransactionNotValidException;
-import com.example.demo.exception.TransactionInFutureException;
-import com.example.demo.model.Statistics;
-import com.example.demo.util.ValidityRange;
-import com.example.demo.model.Transaction;
+import com.n26.cache.StatisticsCache;
+import com.n26.exception.TransactionInFutureException;
+import com.n26.exception.TransactionNotValidException;
+import com.n26.model.Statistics;
+import com.n26.model.Transaction;
+import com.n26.util.ValidityRange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 
 @Service
@@ -32,7 +31,7 @@ public class TransactionService {
             throw new TransactionInFutureException();
         }
 
-        validityRange.updateRange(now.toEpochSecond(ZoneOffset.UTC));
+        validityRange.updateRange(now);
         if (validityRange.isValid((statisticsCache.getTimestamp(transaction)))) {
             statisticsCache.update(transaction);
         }

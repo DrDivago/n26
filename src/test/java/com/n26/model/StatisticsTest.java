@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.n26.model;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -12,8 +12,8 @@ public class StatisticsTest {
         Statistics statistics = Statistics.Builder.newInstance().build();
         Assert.assertEquals(statistics.getSum(), BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
         Assert.assertEquals(statistics.getAvg(), BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals(statistics.getMin(), BigDecimal.valueOf(Double.MAX_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals(statistics.getMax(), BigDecimal.valueOf(Double.MIN_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMin(), BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMax(), BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP));
         Assert.assertEquals(statistics.getCount(), 0);
     }
 

@@ -1,14 +1,13 @@
-package com.example.demo.service;
+package com.n26.service;
 
-import com.example.demo.cache.StatisticsCache;
-import com.example.demo.util.ValidityRange;
-import com.example.demo.model.Statistics;
-import com.example.demo.model.Transaction;
+import com.n26.cache.StatisticsCache;
+import com.n26.model.Statistics;
+import com.n26.model.Transaction;
+import com.n26.util.ValidityRange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 @Service
 public class StatisticsService {
@@ -22,8 +21,8 @@ public class StatisticsService {
     }
 
     public Statistics getStatistics(LocalDateTime now) {
-        validityRange.updateRange(now.toEpochSecond(ZoneOffset.UTC));
-        return statisticsCache.mapReduce(validityRange::isValid);
+        validityRange.updateRange(now);
+        return statisticsCache.mapReduce( validityRange::isValid);
     }
 
 }

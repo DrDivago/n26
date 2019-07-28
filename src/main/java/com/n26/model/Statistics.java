@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.n26.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -13,8 +13,8 @@ public class Statistics {
     public static class Builder {
         private BigDecimal sum = BigDecimal.ZERO;
         private BigDecimal avg = BigDecimal.ZERO;
-        private BigDecimal min = BigDecimal.valueOf(Double.MAX_VALUE);
-        private BigDecimal max = BigDecimal.valueOf(Double.MIN_VALUE);
+        private BigDecimal min = BigDecimal.ZERO;
+        private BigDecimal max = BigDecimal.ZERO;
         private long count;
 
         public static Builder newInstance() {
@@ -58,16 +58,16 @@ public class Statistics {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal avg;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private BigDecimal min;
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal max;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private BigDecimal min;
     private long count;
 
-    public Statistics(Builder builder) {
+    private Statistics(Builder builder) {
         this.sum = builder.sum;
         this.avg = builder.avg;
-        this.min = builder.min;
         this.max = builder.max;
+        this.min = builder.min;
         this.count = builder.count;
     }
 
@@ -92,6 +92,10 @@ public class Statistics {
     }
 
 
+    /**
+     * Update the statistics with a new value
+     * @param value value used to update the statistics
+     */
     public void update(BigDecimal value) {
         incrementCount(1);
         updateSum(value);
@@ -100,6 +104,10 @@ public class Statistics {
         updateMax(value);
     }
 
+    /**
+     * Merge the statistics of newStatistics in the current statistics
+     * @param newStatistic statistics to be merged in current statistics
+     */
     public void merge(Statistics newStatistic) {
         incrementCount(newStatistic.getCount());
         updateSum(newStatistic.getSum());
@@ -121,13 +129,13 @@ public class Statistics {
     }
 
     private void updateMin(BigDecimal amount) {
-        if (amount.compareTo(getMin()) < 0) {
+        if (min.compareTo(BigDecimal.ZERO) == 0 || amount.compareTo(min) < 0) {
             this.min = amount;
         }
     }
 
     private void updateMax(BigDecimal amount) {
-        if (amount.compareTo(getMax()) > 0) {
+        if (max.compareTo(BigDecimal.ZERO) == 0 || amount.compareTo(max) > 0) {
             this.max = amount;
         }
     }

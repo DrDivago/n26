@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.n26.model;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -9,6 +9,7 @@ public class Transaction {
     @NotNull
     private BigDecimal amount;
 
+    @NotNull
     private LocalDateTime timestamp;
 
     public void setAmount(BigDecimal amount) {

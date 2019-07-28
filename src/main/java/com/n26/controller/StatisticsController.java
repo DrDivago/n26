@@ -1,13 +1,13 @@
-package com.example.demo.controller;
+package com.n26.controller;
 
-import com.example.demo.model.Statistics;
-import com.example.demo.service.StatisticsService;
+import com.n26.model.Statistics;
+import com.n26.service.StatisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @RestController
 public class StatisticsController {
@@ -20,6 +20,6 @@ public class StatisticsController {
 
     @GetMapping("/statistics")
     public Statistics getStatistic(){
-        return statisticsService.getStatistics(LocalDateTime.now());
+        return statisticsService.getStatistics(LocalDateTime.now(ZoneOffset.UTC));
     }
 }

@@ -1,12 +1,12 @@
-package com.example.demo;
+package com.n26;
 
-import com.example.demo.cache.StatisticsCache;
-import com.example.demo.cache.StatisticsCacheImpl;
-import com.example.demo.model.Statistics;
-import com.example.demo.model.Transaction;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.*;
+import com.n26.model.Statistics;
+import com.n26.model.Transaction;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,21 +21,21 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.Callable;
-
-import static org.awaitility.Awaitility.await;
 
 @SuppressWarnings("SpellCheckingInspection")
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class N26CodingChallengeIntegrationTests {
+public class StatisticsIntegrationTests {
 
     @Autowired
     private MockMvc mvc;
 
     private ObjectMapper objectMapper;
+
+    private LocalDateTime now;
 
 
     @Before
@@ -43,6 +43,7 @@ public class N26CodingChallengeIntegrationTests {
         Jackson2ObjectMapperBuilder.json().featuresToDisable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE);
         objectMapper = new ObjectMapper();
         objectMapper.findAndRegisterModules();
+        now = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     private String createJson(String amount, LocalDateTime timeTransaction) {
@@ -56,8 +57,8 @@ public class N26CodingChallengeIntegrationTests {
     public void post_transaction_valid() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime now = LocalDateTime.now().minusSeconds(1);
-        String inputJson = createJson("10.334", now);
+        LocalDateTime nowMinusOne = now.minusSeconds(1);
+        String inputJson = createJson("10.334", nowMinusOne);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
@@ -71,8 +72,8 @@ public class N26CodingChallengeIntegrationTests {
     public void post_transaction_older_then_sixty_seconds() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime now = LocalDateTime.now().minusSeconds(120);
-        String inputJson = createJson("10.334", now);
+        LocalDateTime nowMinusTwo = now.minusSeconds(120);
+        String inputJson = createJson("10.334", nowMinusTwo);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
@@ -101,8 +102,8 @@ public class N26CodingChallengeIntegrationTests {
     public void post_transaction_not_parsable_amount() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime now = LocalDateTime.now().minusSeconds(120);
-        String inputJson = createJson("10.334y", now);
+        LocalDateTime nowMinusTwo = now.minusSeconds(120);
+        String inputJson = createJson("10.334y", nowMinusTwo);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
                 .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
@@ -115,8 +116,8 @@ public class N26CodingChallengeIntegrationTests {
     public void post_transaction_not_parsable_timestamp() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime less = LocalDateTime.now().minusSeconds(120);
-        String timestamp = less.toString() + "kljj";
+        LocalDateTime nowMinusTwo = now.minusSeconds(120);
+        String timestamp = nowMinusTwo.toString() + "kljj";
         String inputJson=  "{\"amount\":\"10.3\",\"timestamp\":\""+timestamp+"\"}";
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
@@ -130,7 +131,7 @@ public class N26CodingChallengeIntegrationTests {
     public void post_transaction_in_future() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime transactionInFuture = LocalDateTime.now().plusMinutes(1);
+        LocalDateTime transactionInFuture = now.plusMinutes(1);
         String inputJson=  createJson("11.04", transactionInFuture);
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
@@ -144,7 +145,7 @@ public class N26CodingChallengeIntegrationTests {
     public void postTransaction() throws Exception {
         String uri = "/transactions";
         Transaction transaction = new Transaction();
-        LocalDateTime validDate = LocalDateTime.now().minusSeconds(30);
+        LocalDateTime validDate = now.minusSeconds(30);
 
         transaction.setAmount(new BigDecimal("10.3"));
         transaction.setTimestamp(validDate);
@@ -163,7 +164,7 @@ public class N26CodingChallengeIntegrationTests {
     public void postTransactionPastDate() throws Exception {
         String uri = "/transactions";
 
-        LocalDateTime localDateTime = LocalDateTime.now().minusMinutes(2);
+        LocalDateTime localDateTime = now.minusMinutes(2);
 
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal("10.3"));
@@ -188,12 +189,12 @@ public class N26CodingChallengeIntegrationTests {
         int status = mvcResult.getResponse().getStatus();
         Assert.assertEquals(HttpStatus.OK.value(), status);
 
-        Statistics  statistics = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), Statistics.class);
+        Statistics statistics = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), Statistics.class);
 
         Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
         Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
-        Assert.assertEquals(BigDecimal.valueOf(Double.MAX_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMin());
-        Assert.assertEquals(BigDecimal.valueOf(Double.MIN_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMax());
+        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMin());
+        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMax());
         Assert.assertEquals(statistics.getCount(),0);
     }
 
@@ -201,7 +202,7 @@ public class N26CodingChallengeIntegrationTests {
     public void get_statistics_one_transaction() throws Exception {
         String uriTransaction = "/transactions";
 
-        LocalDateTime localDateTime = LocalDateTime.now().minusSeconds(30);
+        LocalDateTime localDateTime = now.minusSeconds(30);
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal(12.3343));
         transaction.setTimestamp(localDateTime);
@@ -236,7 +237,7 @@ public class N26CodingChallengeIntegrationTests {
     public void get_statistics_two_transaction_same_time() throws Exception {
         String uriTransaction = "/transactions";
 
-        LocalDateTime localDateTime = LocalDateTime.now().minusSeconds(30);
+        LocalDateTime localDateTime = now.minusSeconds(30);
         Transaction transaction = new Transaction();
         transaction.setAmount(new BigDecimal(12.3388));
         transaction.setTimestamp(localDateTime);

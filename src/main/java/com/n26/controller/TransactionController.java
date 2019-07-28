@@ -1,9 +1,11 @@
-package com.example.demo.controller;
+package com.n26.controller;
 
-import com.example.demo.exception.TransactionInFutureException;
-import com.example.demo.exception.TransactionNotValidException;
-import com.example.demo.model.Transaction;
-import com.example.demo.service.TransactionService;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.n26.exception.TransactionInFutureException;
+import com.n26.exception.TransactionNotValidException;
+import com.n26.model.Transaction;
+import com.n26.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @RestController
 public class TransactionController {
@@ -26,7 +29,7 @@ public class TransactionController {
     @PostMapping("/transactions")
     public ResponseEntity<?> addTransaction(@Valid @RequestBody Transaction transaction){
         try {
-            transactionService.addTransaction(transaction, LocalDateTime.now());
+            transactionService.addTransaction(transaction, LocalDateTime.now(ZoneOffset.UTC));
             return new ResponseEntity<>(HttpStatus.CREATED);
         } catch (TransactionNotValidException e) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -42,8 +45,13 @@ public class TransactionController {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public String handleException() {
-        return HttpStatus.UNPROCESSABLE_ENTITY.toString();
+    public ResponseEntity<?> handleException(HttpMessageNotReadableException message) {
+        if (message.getCause() instanceof InvalidFormatException) {
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (message.getCause() instanceof MismatchedInputException) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 }

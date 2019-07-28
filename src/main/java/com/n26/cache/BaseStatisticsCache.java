@@ -1,8 +1,9 @@
-package com.example.demo.cache;
+package com.n26.cache;
 
-import com.example.demo.model.Transaction;
+import com.n26.model.Transaction;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -25,7 +26,7 @@ public class BaseStatisticsCache {
         }
     }
 
-    Long readAction(Transaction transaction, BiFunction<Transaction, Integer, Long> consumer) {
+    LocalDateTime readAction(Transaction transaction, BiFunction<Transaction, Integer, LocalDateTime> consumer) {
         checkAssertion(transaction);
         int index = calculateBucket(transaction.getTimestamp().toEpochSecond(ZoneOffset.UTC));
         lock.readLock().lock();
