@@ -30,7 +30,7 @@ import static org.awaitility.Awaitility.await;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-public class N26CodingChallengeTests {
+public class N26CodingChallengeIntegrationTests {
 
     @Autowired
     private MockMvc mvc;
@@ -64,6 +64,7 @@ public class N26CodingChallengeTests {
 
         int status = mvcResult.getResponse().getStatus();
         Assert.assertEquals(HttpStatus.CREATED.value(), status);
+        delete_transactions();
     }
 
     @Test
@@ -178,7 +179,7 @@ public class N26CodingChallengeTests {
     }
 
     @Test
-    public void getStatistics() throws Exception {
+    public void get_statistics() throws Exception {
         String uri = "/statistics";
 
         MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get(uri).contentType(MediaType.APPLICATION_JSON)).
@@ -189,15 +190,15 @@ public class N26CodingChallengeTests {
 
         Statistics  statistics = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), Statistics.class);
 
-        Assert.assertEquals(statistics.getSum().doubleValue(), 0, 0.001);
-        Assert.assertEquals(statistics.getAvg().doubleValue(), 0, 0.001);
-        Assert.assertEquals(statistics.getMin().doubleValue(), Double.MAX_VALUE, 0.001);
-        Assert.assertEquals(statistics.getMax().doubleValue(), Double.MIN_VALUE, 0.001);
-        Assert.assertEquals(0, statistics.getCount(),0.001);
+        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
+        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
+        Assert.assertEquals(BigDecimal.valueOf(Double.MAX_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMin());
+        Assert.assertEquals(BigDecimal.valueOf(Double.MIN_VALUE).setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMax());
+        Assert.assertEquals(statistics.getCount(),0);
     }
 
     @Test
-    public void getStatistics_one_transaction() throws Exception {
+    public void get_statistics_one_transaction() throws Exception {
         String uriTransaction = "/transactions";
 
         LocalDateTime localDateTime = LocalDateTime.now().minusSeconds(30);
@@ -223,16 +224,16 @@ public class N26CodingChallengeTests {
 
         Statistics statistics = objectMapper.readValue(mvcResultStatistics.getResponse().getContentAsString(), Statistics.class);
 
-        Assert.assertEquals(statistics.getSum().doubleValue(), 12.33, 0.01);
-        Assert.assertEquals(statistics.getAvg().doubleValue(), 12.33, 0.01);
-        Assert.assertEquals(statistics.getMin().doubleValue(), 12.33, 0.01);
-        Assert.assertEquals(statistics.getMax().doubleValue(), 12.33, 0.01);
-        Assert.assertEquals(1, statistics.getCount());
+        Assert.assertEquals(statistics.getSum(), BigDecimal.valueOf(12.33).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getAvg(), BigDecimal.valueOf(12.33).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMin(), BigDecimal.valueOf(12.33).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMax(), BigDecimal.valueOf(12.33).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getCount(), 1);
         delete_transactions();
     }
 
     @Test
-    public void getStatistics_two_transaction_same_time() throws Exception {
+    public void get_statistics_two_transaction_same_time() throws Exception {
         String uriTransaction = "/transactions";
 
         LocalDateTime localDateTime = LocalDateTime.now().minusSeconds(30);
@@ -269,11 +270,11 @@ public class N26CodingChallengeTests {
 
         Statistics  statistics = objectMapper.readValue(mvcResultStatistics.getResponse().getContentAsString(), Statistics.class);
 
-        Assert.assertEquals(22.60, statistics.getSum().doubleValue(),0.001);
-        Assert.assertEquals( 11.30, statistics.getAvg().doubleValue(), 0.001);
-        Assert.assertEquals(10.26,  statistics.getMin().doubleValue(), 0.001);
-        Assert.assertEquals(12.34, statistics.getMax().doubleValue(), 0.001);
-        Assert.assertEquals(2, statistics.getCount());
+        Assert.assertEquals(statistics.getSum(), BigDecimal.valueOf(22.60).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals( statistics.getAvg(), BigDecimal.valueOf(11.30).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMin(), BigDecimal.valueOf(10.26).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getMax(), BigDecimal.valueOf(12.34).setScale(2, BigDecimal.ROUND_HALF_UP));
+        Assert.assertEquals(statistics.getCount(), 2);
         delete_transactions();
     }
 
@@ -284,84 +285,5 @@ public class N26CodingChallengeTests {
         MvcResult mvcResultTransaction = mvc.perform(MockMvcRequestBuilders.delete(uriTransaction)).andReturn();
         int statusTransaction = mvcResultTransaction.getResponse().getStatus();
         Assert.assertEquals(HttpStatus.NO_CONTENT.value(), statusTransaction);
-    }
-
-    @Test
-    public void add_same_transaction_time() {
-
-        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
-
-        LocalDateTime localDateTime = LocalDateTime.now();
-
-        int size = 10000;
-
-        Transaction[] t = new Transaction[size];
-        for (int i = 0; i < size; i++) {
-            t[i] = new Transaction();
-            t[i].setAmount(BigDecimal.valueOf(10));
-            t[i].setTimestamp(localDateTime);
-        }
-
-        for (int i = 0; i < size; i++) {
-            int j = i;
-            new Thread(() -> statisticsCache.add(t[j])).start();
-        }
-
-        await().until(getStatisticsSize(statisticsCache, size, 10*size));
-
-    }
-
-    @Test
-    public void add_same_transaction_different_time()  {
-
-        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
-
-        LocalDateTime localDateTime = LocalDateTime.now();
-        int size = 60;
-
-        Transaction[] t = new Transaction[size];
-        for (int i = 0; i < size; i++) {
-            localDateTime = localDateTime.minusSeconds(1);
-            t[i] = new Transaction();
-            t[i].setAmount(BigDecimal.valueOf(10));
-            t[i].setTimestamp(localDateTime);
-        }
-
-        for (int i = 0; i < size; i++) {
-            int j = i;
-            new Thread(() -> statisticsCache.add(t[j])).start();
-        }
-
-        await().until(getStatisticsSize(statisticsCache, size, 10*size));
-    }
-
-    @Test
-    public void add_get_transaction()  {
-
-        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
-
-        LocalDateTime localDateTime = LocalDateTime.now();
-        int size = 10000;
-
-        Transaction[] t = new Transaction[size];
-        for (int i = 0; i < size; i++) {
-            t[i] = new Transaction();
-            t[i].setAmount(BigDecimal.valueOf(10));
-            t[i].setTimestamp(localDateTime);
-        }
-
-        for (int i = 0; i < size; i++) {
-            int j = i;
-            new Thread(() -> statisticsCache.mapReduce(x ->true));
-            new Thread(() -> statisticsCache.add(t[j])).start();
-        }
-
-        await().until(getStatisticsSize(statisticsCache, size, 10*size));
-    }
-
-
-    private Callable<Boolean> getStatisticsSize(StatisticsCache<Transaction, Statistics> statisticsCache, int size, double expectedSum) {
-        return () -> statisticsCache.mapReduce(x ->true).getCount() == size
-                && statisticsCache.mapReduce(x ->true).getSum().doubleValue() == expectedSum;
     }
 }

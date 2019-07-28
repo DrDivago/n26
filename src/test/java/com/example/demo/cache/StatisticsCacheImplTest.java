@@ -1,7 +1,5 @@
-package com.example.demo.dao;
+package com.example.demo.cache;
 
-import com.example.demo.cache.StatisticsCache;
-import com.example.demo.cache.StatisticsCacheImpl;
 import com.example.demo.model.Statistics;
 import com.example.demo.model.Transaction;
 import org.junit.Assert;
@@ -10,6 +8,9 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.concurrent.Callable;
+
+import static org.awaitility.Awaitility.await;
 
 public class StatisticsCacheImplTest {
 
@@ -140,5 +141,84 @@ public class StatisticsCacheImplTest {
         Assert.assertEquals(statistics.getAvg().doubleValue(), 0.00, 0.01);
         Assert.assertEquals(statistics.getMin().doubleValue(), Double.MAX_VALUE, 0.01);
         Assert.assertEquals(statistics.getMax().doubleValue(), Double.MIN_VALUE, 0.01);
+    }
+
+    @Test
+    public void add_same_transaction_time() {
+
+        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        int size = 10000;
+
+        Transaction[] t = new Transaction[size];
+        for (int i = 0; i < size; i++) {
+            t[i] = new Transaction();
+            t[i].setAmount(BigDecimal.valueOf(10));
+            t[i].setTimestamp(localDateTime);
+        }
+
+        for (int i = 0; i < size; i++) {
+            int j = i;
+            new Thread(() -> statisticsCache.add(t[j])).start();
+        }
+
+        await().until(getStatisticsSize(statisticsCache, size, 10*size));
+
+    }
+
+    @Test
+    public void add_same_transaction_different_time()  {
+
+        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+        int size = 60;
+
+        Transaction[] t = new Transaction[size];
+        for (int i = 0; i < size; i++) {
+            localDateTime = localDateTime.minusSeconds(1);
+            t[i] = new Transaction();
+            t[i].setAmount(BigDecimal.valueOf(10));
+            t[i].setTimestamp(localDateTime);
+        }
+
+        for (int i = 0; i < size; i++) {
+            int j = i;
+            new Thread(() -> statisticsCache.add(t[j])).start();
+        }
+
+        await().until(getStatisticsSize(statisticsCache, size, 10*size));
+    }
+
+    @Test
+    public void add_get_transaction()  {
+
+        StatisticsCache<Transaction, Statistics> statisticsCache = new StatisticsCacheImpl();
+
+        LocalDateTime localDateTime = LocalDateTime.now();
+        int size = 10000;
+
+        Transaction[] t = new Transaction[size];
+        for (int i = 0; i < size; i++) {
+            t[i] = new Transaction();
+            t[i].setAmount(BigDecimal.valueOf(10));
+            t[i].setTimestamp(localDateTime);
+        }
+
+        for (int i = 0; i < size; i++) {
+            int j = i;
+            new Thread(() -> statisticsCache.mapReduce(x ->true));
+            new Thread(() -> statisticsCache.add(t[j])).start();
+        }
+
+        await().until(getStatisticsSize(statisticsCache, size, 10*size));
+    }
+
+
+    private Callable<Boolean> getStatisticsSize(StatisticsCache<Transaction, Statistics> statisticsCache, int size, double expectedSum) {
+        return () -> statisticsCache.mapReduce(x ->true).getCount() == size
+                && statisticsCache.mapReduce(x ->true).getSum().doubleValue() == expectedSum;
     }
 }
