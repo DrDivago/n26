@@ -1,41 +1,45 @@
 package com.example.demo.service;
 
-import com.example.demo.exception.TrasanctionNotValidException;
+import com.example.demo.cache.StatisticsCache;
+import com.example.demo.exception.TransactionNotValidException;
 import com.example.demo.exception.TransactionInFutureException;
-import com.example.demo.dao.StatisticTotal;
-import com.example.demo.dao.ValidityRange;
+import com.example.demo.model.Statistics;
+import com.example.demo.util.ValidityRange;
 import com.example.demo.model.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 
 @Service
 public class TransactionService {
 
-    private StatisticTotal statisticTotal;
-    private ValidityRange validityRange = new ValidityRange();
+    private final StatisticsCache<Transaction, Statistics> statisticsCache;
+    private final ValidityRange validityRange = new ValidityRange();
 
     @Autowired
-    public TransactionService(final StatisticTotal statisticTotal) {
-        this.statisticTotal = statisticTotal;
+    public TransactionService(final StatisticsCache<Transaction, Statistics> statisticsCache) {
+        this.statisticsCache = statisticsCache;
     }
 
-    public void addTransaction(Transaction transaction) throws TrasanctionNotValidException, TransactionInFutureException {
-        LocalDateTime now = LocalDateTime.now();
+    public void addTransaction(Transaction transaction, LocalDateTime now ) throws TransactionNotValidException, TransactionInFutureException {
         if (isTransactionOlderThenSixtySeconds(transaction, now)) {
-            throw new TrasanctionNotValidException();
+            throw new TransactionNotValidException();
         }
         if (isTransactionInFuture(transaction, now)) {
             throw new TransactionInFutureException();
         }
 
         validityRange.updateRange(now.toEpochSecond(ZoneOffset.UTC));
-        statisticTotal.addTransaction(transaction, validityRange);
-
+        if (validityRange.isValid((statisticsCache.getTimestamp(transaction)))) {
+            statisticsCache.update(transaction);
+        }
+        else {
+            statisticsCache.invalidate(transaction);
+            statisticsCache.add(transaction);
+        }
     }
 
     private boolean isTransactionInFuture(Transaction transaction, LocalDateTime now) {
@@ -48,14 +52,7 @@ public class TransactionService {
         return (transactionTime.isBefore(lessThenSixty));
     }
 
-    public static void main(String[] args) {
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-        String timestamp = formatter.format(now);
-        System.out.println(timestamp);
-    }
-
     public void deleteTransactions() {
-        statisticTotal.delete();
+        statisticsCache.deleteAll();
     }
 }

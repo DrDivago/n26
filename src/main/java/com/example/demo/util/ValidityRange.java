@@ -1,11 +1,11 @@
-package com.example.demo.dao;
+package com.example.demo.util;
 
 
 public class ValidityRange {
     private long begin = Long.MAX_VALUE;
     private long end = Long.MIN_VALUE;
 
-    boolean checkValid(long value) {
+    public boolean isValid(long value) {
         return value > begin && value < end;
     }
 
