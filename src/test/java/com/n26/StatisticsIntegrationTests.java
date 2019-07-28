@@ -271,11 +271,11 @@ public class StatisticsIntegrationTests {
 
         Statistics  statistics = objectMapper.readValue(mvcResultStatistics.getResponse().getContentAsString(), Statistics.class);
 
-        Assert.assertEquals(statistics.getSum(), BigDecimal.valueOf(22.60).setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals( statistics.getAvg(), BigDecimal.valueOf(11.30).setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals(statistics.getMin(), BigDecimal.valueOf(10.26).setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals(statistics.getMax(), BigDecimal.valueOf(12.34).setScale(2, BigDecimal.ROUND_HALF_UP));
-        Assert.assertEquals(statistics.getCount(), 2);
+        Assert.assertEquals(BigDecimal.valueOf(22.60).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
+        Assert.assertEquals(BigDecimal.valueOf(11.30).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
+        Assert.assertEquals(BigDecimal.valueOf(10.26).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMin());
+        Assert.assertEquals(BigDecimal.valueOf(12.34).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMax());
+        Assert.assertEquals(2, statistics.getCount());
         delete_transactions();
     }
 

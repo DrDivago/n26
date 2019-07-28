@@ -48,12 +48,12 @@ public class StatisticsCacheImplTest {
         statisticsCache.add(t);
 
         Statistics statistics = statisticsCache.mapReduce(x->true);
-        Assert.assertEquals(statistics.getCount(), 1);
-        Assert.assertEquals(statistics.getSum().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getAvg().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getMin().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getMax().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statisticsCache.getTimestamp(t), now);
+        Assert.assertEquals(1, statistics.getCount());
+        Assert.assertEquals(BigDecimal.valueOf(10.0).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
+        Assert.assertEquals(BigDecimal.valueOf(10.0).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
+        Assert.assertEquals(BigDecimal.valueOf(10.0).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMin());
+        Assert.assertEquals(BigDecimal.valueOf(10.0).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMax());
+        Assert.assertEquals(now, statisticsCache.getTimestamp(t));
     }
 
     @Test
@@ -73,7 +73,8 @@ public class StatisticsCacheImplTest {
         Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
         Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
         Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMin());
-        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP),statistics.getMax());
+        Assert.assertEquals(BigDecimal.ZERO.setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMax());
+        Assert.assertNull(statisticsCache.getTimestamp(t));
     }
 
     @Test
@@ -88,12 +89,12 @@ public class StatisticsCacheImplTest {
         statisticsCache.add(t);
 
         Statistics statistics = statisticsCache.mapReduce(x->true);
-        Assert.assertEquals(statistics.getCount(), 1);
-        Assert.assertEquals(statistics.getSum().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getAvg().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getMin().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getMax().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statisticsCache.getTimestamp(t), now);
+        Assert.assertEquals(1, statistics.getCount());
+        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
+        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
+        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMin());
+        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMax());
+        Assert.assertEquals(now, statisticsCache.getTimestamp(t));
 
         Transaction t2 = new Transaction();
         t2.setTimestamp(now);
@@ -101,12 +102,12 @@ public class StatisticsCacheImplTest {
 
         statisticsCache.update(t2);
         statistics = statisticsCache.mapReduce(x->true);
-        Assert.assertEquals(statistics.getCount(), 2);
-        Assert.assertEquals(statistics.getSum().doubleValue(), 30.0, 0.01);
-        Assert.assertEquals(statistics.getAvg().doubleValue(), 15.0, 0.01);
-        Assert.assertEquals(statistics.getMin().doubleValue(), 10.0, 0.01);
-        Assert.assertEquals(statistics.getMax().doubleValue(), 20.0, 0.01);
-        Assert.assertEquals(statisticsCache.getTimestamp(t), now);
+        Assert.assertEquals(2, statistics.getCount(), 2);
+        Assert.assertEquals(BigDecimal.valueOf(30).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getSum());
+        Assert.assertEquals(BigDecimal.valueOf(15).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getAvg());
+        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMin());
+        Assert.assertEquals(BigDecimal.valueOf(20).setScale(2, BigDecimal.ROUND_HALF_UP), statistics.getMax());
+        Assert.assertEquals(now, statisticsCache.getTimestamp(t));
         Assert.assertEquals(statisticsCache.getTimestamp(t), statisticsCache.getTimestamp(t2));
 
     }
